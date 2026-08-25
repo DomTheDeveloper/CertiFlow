@@ -15,7 +15,6 @@ The current PVLDB 2027 Vision-paper prototype focuses on:
 - `src/certiflow.py` — reference IR, fact model, certificates, fact store, checker, and rule implementations.
 - `tests/test_certiflow.py` — executable regression harness.
 - `ARTIFACT.md` — reproducibility scope, environment, and expected outputs.
-- `HISTORY.md` — research chronology and current implementation status.
 - `CITATION.cff` — citation metadata for the artifact.
 
 ## Quick start
