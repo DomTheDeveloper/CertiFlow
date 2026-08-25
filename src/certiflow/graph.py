@@ -21,7 +21,7 @@ class PipelineGraph:
                 raise GraphError(f"duplicate node name: {node.name}")
             mapping[node.name] = node
         graph = cls(mapping)
-        graph.topological_order()
+        graph.topological_order()  # validate acyclicity
         return graph
 
     def children(self) -> dict[str, set[str]]:

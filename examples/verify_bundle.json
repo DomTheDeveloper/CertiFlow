@@ -1,0 +1,16 @@
+{
+  "node": {
+    "op": "Join",
+    "name": "orders_customers",
+    "args": {"join_type": "left", "equi": [["customer_id", "customer_id"]]},
+    "inputs": ["orders", "customers"]
+  },
+  "facts": [
+    {"kind": "Key", "subject": "customers", "payload": {"columns": ["customer_id"]}}
+  ],
+  "certificate": {
+    "subject_hash": "REPLACE_WITH_HASH",
+    "rule": "join_fanout",
+    "witness": {"left_col": "customer_id", "right_col": "customer_id", "right_relation": "customers"}
+  }
+}

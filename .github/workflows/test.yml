@@ -1,5 +1,9 @@
 name: CertiFlow CI
-on: [push, pull_request]
+
+on:
+  push:
+  pull_request:
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -16,3 +20,45 @@ jobs:
       - run: python -m pytest -q
       - run: certiflow benchmark --nodes 250
       - run: python -m certiflow.bench.evaluate --trials 20
+
+  reproduce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - run: mkdir -p ci-results
+      - run: python -m pytest -q | tee ci-results/tests.txt
+      - run: python -m certiflow.bench.evaluate --trials 100 | tee ci-results/mutations.json
+      - run: python -m certiflow.bench.coverage --nodes 1000 | tee ci-results/coverage.json
+      - run: python -m certiflow.bench.suite --repeats 7 | tee ci-results/scaling.json
+      - run: python -m certiflow.bench.branched --branches 20 --depth 100 --repeats 7 | tee ci-results/branched-20.json
+      - run: python -m certiflow.bench.branched --branches 50 --depth 100 --repeats 7 | tee ci-results/branched-50.json
+      - run: python -m certiflow.bench.jaffle | tee ci-results/jaffle.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: certiflow-reproduction-results
+          path: ci-results
+
+  paper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch exact PVLDB template bundle
+        run: |
+          git clone --depth 1 https://github.com/vldbproceedings/VLDB-Template.git /tmp/vldb-template
+          cp /tmp/vldb-template/acmart.cls paper/acmart.cls
+          cp /tmp/vldb-template/pvldb.sty paper/pvldb.sty
+          cp /tmp/vldb-template/ACM-Reference-Format.bst paper/ACM-Reference-Format.bst
+      - name: Compile manuscript with pinned template
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: CertiFlow_PVLDB2027_Regular_Research.tex
+          working_directory: paper
+          latexmk_use_xelatex: false
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CertiFlow-PVLDB2027-paper
+          path: paper/CertiFlow_PVLDB2027_Regular_Research.pdf

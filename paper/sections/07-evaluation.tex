@@ -1,0 +1,97 @@
+\section{Evaluation}
+
+We evaluate four questions: (RQ1) do the implemented semantic rules reject incorrect witnesses after freshness is neutralized; (RQ2) what is the bookkeeping cost of graph construction and change analysis; (RQ3) how selective is invalidation in a branched DAG; and (RQ4) can the current normalizer represent an unmodified real dbt project while exposing unsupported semantics instead of silently approximating them?
+
+Unless otherwise stated, local timing results were collected with CPython 3.13.5 on Linux 6.18.35 using five virtual Intel Xeon Platinum 8370C cores. Timings are medians of seven runs. The public CI reproduces functional results on Python 3.9 and 3.12; absolute timing values are environment-dependent.
+
+\subsection{Experimental controls and baselines}
+
+The experiments separate three mechanisms that can otherwise be conflated. First, a \emph{freshness baseline} rejects a certificate when its subject hash differs from the current transformation. Second, the semantic mutation experiment neutralizes that baseline by recomputing the subject hash after mutation; any detection is therefore attributable to the rule obligation. Third, the branched-DAG experiment compares dependency-selective invalidation with a conceptual full-revalidation baseline that revisits every node after any change.
+
+We do not report a numerical comparison against dbt tests or contracts because their semantics and configuration are not equivalent to the seven CertiFlow rule families. Such a comparison would require manually aligned invariants and is listed as future evaluation rather than treated as an artificial baseline. The current experiments instead answer whether the implemented checker adds semantic discrimination beyond freshness and whether explicit dependencies reduce revalidation scope.
+
+\subsection{Semantic mutation study}\label{sec:mutation}
+
+We construct valid node/certificate pairs and inject five defect families: wrong join key, wrong aggregation grain, broken key-preserving projection, schema drift, and restricted-field leakage. For each mutant, the certificate is re-bound to the mutant's new subject hash. Consequently, a freshness-only system cannot distinguish the mutant from a newly generated certificate; detection must come from the semantic rule.
+
+\begin{table}[t]
+\caption{Semantic mutation results (100 trials per family).}
+\label{tab:mutation}
+\small
+\begin{tabular}{lrr}
+\toprule
+Fault family & Rejected & Accepted/unknown \\
+\midrule
+Join key & 100 & 0 \\
+Aggregation grain & 100 & 0 \\
+Projection key & 100 & 0 \\
+Schema drift & 100 & 0 \\
+Restricted flow & 100 & 0 \\
+\midrule
+Total & 500 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+CertiFlow rejects all 500 re-bound mutants (Table~\ref{tab:mutation}). This experiment validates the implemented obligations, not real-world recall: the mutants are generated from the same rule families being tested. Its purpose is to show that semantic checking contributes beyond content freshness.
+
+\subsection{Graph scaling}
+
+Table~\ref{tab:scaling} reports deterministic synthetic linear-DAG measurements. The midpoint edit intentionally creates a large descendant set, approaching a worst case for selective invalidation.
+
+\begin{table}[t]
+\caption{Median bookkeeping time over seven runs.}
+\label{tab:scaling}
+\small
+\begin{tabular}{rrrrr}
+\toprule
+Nodes & Build ms & Topo ms & Diff ms & Affected \\
+\midrule
+100 & 0.27 & 0.09 & 3.15 & 50 \\
+1,000 & 2.86 & 1.01 & 32.71 & 498 \\
+5,000 & 14.87 & 6.04 & 160.10 & 2,498 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The implementation is pure Python and optimized for transparency rather than throughput. Even so, graph construction and ordering remain small relative to typical warehouse execution times. Change analysis scales with the size of the affected region because descendant traversal dominates the midpoint workload.
+
+\subsection{Selective invalidation}
+
+To separate graph size from affected-region size, we construct a root feeding independent branches of fixed depth 100 and modify the midpoint of one branch. With 20 branches (2,001 nodes), 50 nodes are invalidated, or 2.50\% of the graph; median analysis time is 59.3 ms. With 50 branches (5,001 nodes), the same 50-node region represents 1.00\% of the graph; median analysis time is 159.0 ms. A full-revalidation baseline would reconsider all 2,001 or 5,001 nodes respectively.
+
+The main result is not the absolute Python runtime but the reduction in revalidation scope: as independent branches are added, the affected region remains fixed.
+
+\subsection{Pinned dbt corpus}
+
+We evaluate structural normalization on dbt Labs' Jaffle Shop at commit \texttt{7d0d8de2d58edae06f0724a3892da0224bbf0f4a}. The artifact pins the 13 SQL model paths and their Git blob hashes before processing, so an upstream repository change cannot silently alter the workload.
+
+\begin{table}[t]
+\caption{Jaffle Shop normalization at the pinned commit.}
+\label{tab:jaffle}
+\small
+\begin{tabular}{lr}
+\toprule
+Metric & Result \\
+\midrule
+SQL models & 13 \\
+Structurally normalized & 13 \\
+Rejected models & 0 \\
+IR nodes & 67 \\
+Opaque computed expressions & 9 \\
+Opaque relation-generating constructs & 1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All 13 models are structurally represented (Table~\ref{tab:jaffle}). Nine dbt/Jinja computations are preserved as opaque computed expressions. One model uses a relation-generating \texttt{date\_spine} macro; CertiFlow retains that CTE as an opaque relation boundary. This behavior is intentional. The system preserves dependency structure while refusing to certify semantics it does not implement.
+
+This experiment measures normalization coverage, not end-to-end proof coverage. A larger study must specify desired invariants for each model and compare CertiFlow against project-specific dbt tests and contracts.
+
+\subsection{Coverage of generated certificates}
+
+On a deterministic 1,000-node synthetic pipeline, the built-in inference producer proposes 502 certificates for operators for which its local rule templates apply. All 502 are accepted and none are rejected or unknown because the workload is generated to satisfy the corresponding rule preconditions. This result is not a recall measurement; it is an end-to-end composition check showing that accepted key and fanout facts become available to later nodes as intended. Mutation testing is reported separately precisely because a positive-path workload alone cannot establish discriminating power.
+
+\subsection{Live SQLite integration}
+
+The integration suite creates a temporary SQLite database with primary and unique-key constraints, extracts the resulting key facts from the live catalog, normalizes a SELECT with a left join and filter, and executes the CertiFlow verification engine. The join-fanout certificate is accepted only because the right-side uniqueness fact is recovered from the catalog. Separate tests exercise composite catalog handling, policy-gate behavior, and the audit-chain invariant. These tests establish an end-to-end path from physical database metadata to accepted downstream facts without hard-coding the key into the certificate producer.

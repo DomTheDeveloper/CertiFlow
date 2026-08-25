@@ -39,6 +39,7 @@ class FactStore:
         return sorted(out, key=lambda f: f.id)
 
     def invalidate(self, roots: Iterable[str]) -> set[str]:
+        """Remove root facts and all transitively dependent facts."""
         doomed: Set[str] = set()
         q = deque(roots)
         while q:

@@ -3,7 +3,7 @@ from dataclasses import asdict, is_dataclass
 from enum import Enum
 from hashlib import sha256
 import json
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 
 def _normalize(value: Any) -> Any:

@@ -1,0 +1,18 @@
+\section{Introduction}
+
+Data engineering systems increasingly compose transformations across multiple execution environments. A production graph may contain warehouse SQL, dbt models, Python or dataframe transformations, orchestration metadata, generated code, external services, and engine-specific user-defined functions. The correctness of such a graph is not reducible to the correctness of individual statements. A join may assume uniqueness on one input; an aggregation may assume a specific grain; a downstream model may require a key established many steps earlier; and a governance rule may require that a restricted attribute never reach a prohibited output.
+
+Three established lines of work address parts of this problem. Provenance represents derivation and dependency structure~\cite{buneman2001whywhere,green2007provenance,herschel2017survey,rupprecht2020provenance}. Formal query reasoning proves semantic properties for supported SQL fragments~\cite{chu2017hottsql,chu2017axiomatic}. Data-quality and cleaning systems detect violations in concrete data~\cite{ilyas2019datacleaning}. More recently, grain-aware verification formalized an important class of data-engineering errors, including fan and chasm traps~\cite{karayannidis2026grain}, while ELT-Bench showed that end-to-end pipeline construction remains difficult for contemporary AI agents~\cite{jin2025eltbench}.
+
+CertiFlow addresses a complementary systems question: \emph{when evidence for a transformation property exists, how should that evidence be bound to an exact pipeline state, checked independently of the producer that generated it, composed with upstream evidence, and invalidated when the graph changes?}
+
+The central design is a producer/checker separation. A producer can be a metadata extractor, static analyzer, theorem prover, runtime profiler, or AI-assisted tool. It has no authority to create trusted facts. Instead, it emits a certificate. A small deterministic checker validates the certificate against the canonical transformation and the currently trusted assumptions. Only accepted claims enter the fact store. This is analogous in spirit to proof-carrying code~\cite{necula1997pcc}, but applied to versioned data-transformation properties rather than machine-code safety.
+
+The paper makes the following contributions:
+\begin{itemize}
+  \item a typed certificate and fact model for heterogeneous data-transformation DAGs;
+  \item a deterministic three-valued checker interface that separates evidence production from trust;
+  \item dependency-aware, content-addressed invalidation for incremental reuse of accepted facts;
+  \item a working implementation spanning dbt, SQL normalization, live SQLite catalog evidence, deployment gates, and tamper-evident audit records; and
+  \item an empirical evaluation covering semantic mutation resistance, incremental graph scaling, selective invalidation, and normalization of a pinned real dbt project.
+\end{itemize}

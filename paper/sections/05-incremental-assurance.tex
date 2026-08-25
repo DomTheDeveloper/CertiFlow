@@ -1,0 +1,21 @@
+\section{Incremental Assurance}
+
+Accepted facts record every fact identifier consulted by their derivation. Let $G_F=(F,E_F)$ be the resulting fact-dependency graph, where $(f_i,f_j)\in E_F$ means that $f_j$ depends on $f_i$. Invalidating root set $R$ removes
+\[
+  I(R)=\{f\mid \exists r\in R:\;r\leadsto f\}.
+\]
+The store maintains reverse edges, so invalidation traverses only the dependency closure.
+
+At the transformation level, CertiFlow compares old and new node hashes. Changed nodes and their descendants lose reusable certificates; unrelated branches retain cached evidence.
+
+\begin{proposition}[Selective invalidation]
+If each derived fact records every fact consulted by its checker rule, removing $I(R)$ removes all accepted facts whose derivations depend on any invalidated root and preserves every accepted fact outside the dependency closure.
+\end{proposition}
+
+This property is operationally important because warehouse DAGs frequently contain independent branches. Revalidating the full graph after a localized change is unnecessary when the evidence dependency graph identifies the affected region.
+
+\subsection{Complexity and reuse}
+
+Let $|V|$ and $|E|$ denote transformation nodes and dependency edges. Canonical hashing is linear in the serialized node size. Topological traversal is $O(|V|+|E|)$. For a changed node set $S$, transformation invalidation traverses the descendant closure $\mathrm{Desc}(S)$ rather than the full graph. Fact invalidation is analogous on the reverse fact-dependency graph. Certificate cache lookup is keyed by the canonical node hash, so an unchanged node can reuse a certificate without reparsing the certificate's source transformation.
+
+This does not imply that every property can be reused solely because the immediate node text is unchanged. Assumption identifiers are part of a certificate, and derived facts depend on those identifiers. A change to an upstream key or schema fact therefore invalidates downstream evidence even when the downstream SQL string itself is byte-for-byte identical. CertiFlow distinguishes \emph{transformation freshness} from \emph{assumption freshness}; both are required for reuse.

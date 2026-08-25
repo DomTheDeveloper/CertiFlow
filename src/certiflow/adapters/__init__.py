@@ -1,4 +1,5 @@
 from .base import Adapter
 from .catalog import CatalogAdapter
 from .dbt import DbtManifestAdapter
-__all__ = ["Adapter", "CatalogAdapter", "DbtManifestAdapter"]
+from .sqlite import SQLiteAdapter
+__all__ = ["Adapter", "CatalogAdapter", "DbtManifestAdapter", "SQLiteAdapter"]

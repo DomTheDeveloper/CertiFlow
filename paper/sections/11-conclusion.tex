@@ -1,0 +1,5 @@
+\section{Conclusion}
+
+CertiFlow treats data-pipeline guarantees as versioned, machine-checkable artifacts rather than informal assumptions. Certificates are cryptographically bound to normalized transformations, checked independently of their producers, composed through typed facts, and selectively invalidated when their dependencies change. The resulting architecture provides a common acceptance boundary for metadata extractors, static analyses, theorem provers, runtime evidence, and AI-assisted tools without trusting those producers directly.
+
+The current system demonstrates the design across seven semantic rule families, live database metadata, dbt and SQL normalization, incremental graph maintenance, policy enforcement, and a reproducible real-corpus evaluation. The principal open problem is semantic breadth: extending certificate coverage without allowing the checker to grow into another full database engine. The producer/checker boundary is intended to make that extension modular while preserving a small, reviewable source of trust.

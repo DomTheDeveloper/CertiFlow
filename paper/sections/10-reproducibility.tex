@@ -1,0 +1,11 @@
+\section{Reproducibility}
+
+The artifact is public at \url{https://github.com/DomTheDeveloper/CertiFlow}. The core experiment commands are:
+\begin{itemize}
+  \item \texttt{python -m pytest -q} for the 27-test suite;
+  \item \texttt{python -m certiflow.bench.evaluate --trials 100} for semantic mutations;
+  \item \texttt{python -m certiflow.bench.suite} for repeated scaling measurements;
+  \item \texttt{python -m certiflow.bench.branched --branches 50 --depth 100 --repeats 7} for selective invalidation; and
+  \item \texttt{python -m certiflow.bench.jaffle} for the pinned Jaffle Shop corpus.
+\end{itemize}
+The Jaffle runner verifies every upstream Git blob hash before normalization. CI executes the functional suite on two Python versions and compiles this manuscript using the official PVLDB Volume 20 template, which pins \texttt{acmart.cls} v2.19.

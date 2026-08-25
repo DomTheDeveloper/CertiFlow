@@ -1,0 +1,63 @@
+\documentclass[sigconf,nonacm]{acmart}
+
+%%% do not modify the following VLDB block %%%
+\usepackage{pvldb}
+
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit}
+\setlist[itemize]{leftmargin=*,topsep=2pt,itemsep=1.5pt,parsep=0pt}
+
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+
+\renewcommand\vldbdoi{XX.XX/XXX.XX}
+\renewcommand\vldbpages{XXX-XXX}
+\renewcommand\vldbavailabilityurl{https://github.com/DomTheDeveloper/CertiFlow}
+
+\begin{document}
+
+\title{CertiFlow: Proof-Carrying Data Pipelines for Composable Transformation Assurance}
+
+\author{Dominic Dabish}
+\affiliation{%
+  \institution{Department of Computer Science, San Diego State University}
+  \city{San Diego}
+  \state{California}
+  \country{USA}}
+\email{ddabish@sdsu.edu}
+
+\begin{abstract}
+Modern analytical pipelines combine SQL engines, dbt models, dataframe code, orchestration metadata, generated transformations, and user-defined logic. Correctness therefore depends on semantic assumptions that cross component boundaries, including key preservation, join multiplicity, aggregation grain, schema compatibility, and restrictions on sensitive fields. Conventional tests and data-quality monitors are valuable, but they do not provide a uniform mechanism for carrying independently checkable semantic claims through a versioned heterogeneous transformation graph.
+
+We present CertiFlow, a proof-carrying architecture for data pipelines. Transformations are normalized to a small engine-neutral intermediate representation (IR). Untrusted producers emit certificates containing a cryptographic subject binding, explicit assumptions, a rule identifier, and a witness. A deterministic checker is the only component permitted to admit derived facts into the trusted fact store; unsupported semantics remain explicitly \emph{unknown}. Accepted facts record their dependencies, enabling selective invalidation after schema or transformation changes.
+
+The current research system comprises 33 Python source modules and 15 test modules (2,411 source-and-test lines), seven semantic rule families, dependency-aware invalidation, a content-addressed certificate cache, dbt and live SQLite adapters, a conservative SQL/dbt normalizer, an end-to-end verification engine, deployment-policy gates, and a hash-chained audit ledger. All 27 tests pass. In a semantic mutation study, CertiFlow rejected 500/500 re-bound certificates across five fault families, while a freshness-only hash check is intentionally neutralized by re-binding each mutant. On a 5,001-node branched graph, a localized edit invalidated 50 nodes (1.0\% of the graph). On a pinned current revision of dbt Labs' Jaffle Shop, CertiFlow structurally normalized all 13 SQL models into 67 IR nodes, preserving nine unsupported computed expressions and one relation-generating macro as explicit opaque boundaries. These results support the feasibility of a small-checker architecture while delineating the remaining problem of broad semantic coverage.
+\end{abstract}
+
+\keywords{data pipelines, provenance, data quality, ETL, formal assurance, incremental verification}
+
+\maketitle
+
+%%% do not modify the following VLDB block %%%
+\vldbtopmatter
+
+\input{sections/01-introduction.tex}
+\input{sections/02-problem-and-design-goals.tex}
+\input{sections/03-end-to-end-assurance-lifecycle.tex}
+\input{sections/04-certificate-semantics.tex}
+\input{sections/05-incremental-assurance.tex}
+\input{sections/06-implementation.tex}
+\input{sections/07-evaluation.tex}
+\input{sections/08-discussion.tex}
+\input{sections/09-threats-to-validity-and-limitations.tex}
+\input{sections/10-reproducibility.tex}
+\input{sections/11-conclusion.tex}
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{certiflow}
+
+\end{document}

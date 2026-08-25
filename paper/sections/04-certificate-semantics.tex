@@ -1,0 +1,56 @@
+\section{Certificate Semantics}
+
+\subsection{Content binding}
+
+Every IR node has a canonical serialization over operator, name, arguments, inputs, engine identifier, and source reference. CertiFlow hashes this serialization with SHA-256. A certificate whose subject hash differs from the current node is rejected before semantic checking. Facts are content-addressed using the same canonicalization contract.
+
+Subject binding solves freshness, not correctness. In the mutation evaluation (Section~\ref{sec:mutation}), every mutant is deliberately re-bound to its new node hash, forcing the semantic rule rather than the freshness check to detect the defect.
+
+\subsection{Rule families}
+
+The current checker registers seven rule families (Table~\ref{tab:rules}). The rules are intentionally small proof obligations over normalized structure and previously accepted facts.
+
+\begin{table}[t]
+\caption{Implemented checker rules and their evidence requirements.}
+\label{tab:rules}
+\small
+\begin{tabular}{p{0.28\linewidth}p{0.64\linewidth}}
+\toprule
+Rule & Checked obligation \\
+\midrule
+Projection key & Output mapping preserves each column of an accepted input key. \\
+Join fanout & Equi-join witness matches normalized predicate and referenced side has an accepted key fact. \\
+Group grain & Witness grain equals the normalized grouping key sequence. \\
+Restricted flow & Restricted source attributes do not reach prohibited outputs under explicit lineage. \\
+Schema compatibility & Actual typed schema satisfies the expected schema relation. \\
+Filter key & Selection reissues an accepted input key because filtering cannot duplicate surviving tuples. \\
+Union schema & Inputs satisfy the rule's schema-compatibility requirement. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For a projection mapping $m$ from output attributes to source attributes, an input key $K=(a_1,\ldots,a_k)$ and proposed output key $K'=(b_1,\ldots,b_k)$ are accepted only when
+\[
+  m(b_i)=a_i \quad \forall i\in\{1,\ldots,k\}.
+\]
+For an inner or left equi-join $J=L\bowtie_{L.a=R.b}R$, a trusted key fact $\mathsf{Key}(R,\{b\})$ justifies $\mathsf{Fanout}(J,L\rightarrow J)\leq 1$. If the key fact is absent, the checker returns \textsf{unknown}; it does not assume that observed instance-level uniqueness is an invariant.
+
+Restricted-flow checking uses explicit column lineage. For restricted source set $R_s$ and prohibited outputs $F_o$, the checker rejects if
+\[
+  \exists o\in F_o:\;\mathsf{lineage}(o)\cap R_s\neq\emptyset.
+\]
+Lineage for arbitrary expressions is not inferred by this rule; it must come from a trusted normalizer or another checked source.
+
+\begin{proposition}[Relative soundness]
+Assume each registered rule is sound for the documented normalized operator semantics and each fact in a certificate's assumption set is valid. If the checker accepts certificate $C$ for node $v$, every emitted claim is valid for the normalized subject represented by the certificate's subject hash.
+\end{proposition}
+
+The proposition is relative by design. CertiFlow reduces trust in producers; it does not eliminate the need to validate the checker rules and normalizer semantics.
+
+\subsection{Rule contracts and the trusted computing base}
+
+Each checker rule is a total function over a deliberately narrow input contract. The rule may accept and emit facts, reject malformed or contradictory evidence, or return \textsf{unknown} when required semantics are absent. This contract avoids two common failure modes in assurance tooling: treating missing metadata as a failed property, and treating a successful producer run as evidence that a property holds.
+
+The current TCB consists of canonical serialization and hashing, adapter semantics for trusted metadata, the rule registry and rule implementations, and dependency invalidation. The certificate producer, benchmark generator, LLM assistance, and any future solver are not trusted. This decomposition is useful even before the checker itself is formally verified because it establishes a small auditable target for independent reimplementation. In the current artifact, the semantic checker and model are isolated from the dbt corpus downloader, CLI, and evaluation code.
+
+A further consequence is that claims are \emph{property-specific}. Accepting a join-fanout certificate does not imply arbitrary query equivalence, null-safety, or privacy. The fact store records exactly the property established by the corresponding rule. This prevents a local proof from being interpreted as a global correctness certificate.

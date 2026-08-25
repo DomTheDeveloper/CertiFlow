@@ -1,0 +1,16 @@
+{
+  "environment": {"python": "3.13.5", "os": "Linux 6.18.35 x86_64", "cpu": "Intel Xeon Platinum 8370C @ 2.80GHz", "virtual_cores_available": 5},
+  "tests": {"passed": 27, "failed": 0},
+  "semantic_mutation": {"trials_per_family": 100, "families": ["join-key", "aggregation-grain", "projection-key", "schema-drift", "restricted-flow"], "rejected": 500, "accepted": 0, "unknown": 0, "note": "Each mutated certificate is rebound to the mutated subject hash before semantic checking."},
+  "synthetic_scaling_medians_ms": [
+    {"nodes": 100, "build": 0.27, "topological": 0.09, "change_analysis": 3.15, "affected_nodes": 50},
+    {"nodes": 1000, "build": 2.86, "topological": 1.01, "change_analysis": 32.71, "affected_nodes": 498},
+    {"nodes": 5000, "build": 14.87, "topological": 6.04, "change_analysis": 160.10, "affected_nodes": 2498}
+  ],
+  "selective_invalidation": [
+    {"nodes": 2001, "branches": 20, "depth": 100, "affected_nodes": 50, "affected_fraction": 0.02499, "median_ms": 59.3},
+    {"nodes": 5001, "branches": 50, "depth": 100, "affected_nodes": 50, "affected_fraction": 0.009998, "median_ms": 159.0}
+  ],
+  "positive_path": {"nodes": 1000, "certificates": 502, "accepted": 502, "rejected": 0, "unknown": 0},
+  "jaffle_shop": {"repository": "dbt-labs/jaffle-shop", "commit": "7d0d8de2d58edae06f0724a3892da0224bbf0f4a", "sql_models": 13, "normalized": 13, "rejected": 0, "ir_nodes": 67, "opaque_expressions": 9, "opaque_relations": 1}
+}

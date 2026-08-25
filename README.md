@@ -1,38 +1,62 @@
 # CertiFlow
 
-CertiFlow is a research system for proof-carrying data pipelines. It attaches versioned, machine-checkable evidence to data transformations and checks that evidence independently before a guarantee is admitted into a pipeline's trusted fact set.
+CertiFlow is a research system for proof-carrying data pipelines. It turns semantic assumptions about data transformations into versioned, machine-checkable artifacts and admits derived guarantees only after independent deterministic verification.
 
-The current system targets a PVLDB 2027 Regular Research Paper.
+The repository accompanies the PVLDB 2027 Regular Research submission **“CertiFlow: Proof-Carrying Data Pipelines for Composable Transformation Assurance.”**
 
-## Design
+## Core design
 
-CertiFlow has an engine-neutral transformation IR, untrusted certificate producers, a small deterministic checker, and dependency-aware certificate caching and invalidation. The rule set covers key preservation, bounded join fanout, aggregation grain, schema compatibility, restricted-field flow, filter key preservation, and union schema compatibility. Unsupported semantics return `UNKNOWN`.
+CertiFlow separates evidence production from trust:
 
-## Repository layout
+1. adapters normalize dbt, SQL, and live catalog metadata into a small engine-neutral IR;
+2. untrusted producers propose certificates bound to exact transformation hashes;
+3. a deterministic checker validates rule-specific witnesses and trusted assumptions;
+4. accepted facts enter a content-addressed store with explicit dependencies;
+5. graph and fact dependencies support selective invalidation after changes;
+6. policy gates consume only accepted facts, and audit events can be hash-chained.
 
-- `src/certiflow/` - implementation
-- `src/certiflow/adapters/` - dbt and catalog normalization
-- `src/certiflow/bench/` - synthetic workloads, mutation testing, and incremental evaluation
-- `tests/` - unit, integration, CLI, adapter, and regression tests
-- `paper/` - PVLDB manuscript
-- `docs/architecture.md` - trust boundary and data flow
-- `ARTIFACT.md` - reproducibility instructions
+Unsupported semantics remain explicit `UNKNOWN` or opaque boundaries. CertiFlow does not claim complete SQL semantics.
 
-## Quick start
+## Implemented rule families
+
+- projection key preservation
+- bounded join fanout from accepted uniqueness evidence
+- aggregation grain
+- restricted-field flow from explicit lineage
+- schema compatibility
+- filter key preservation
+- union schema compatibility
+
+## Integration surface
+
+The artifact includes a dbt manifest adapter, conservative dbt/SQL normalizers, an engine-neutral catalog adapter, a live SQLite catalog adapter, a CLI, an inference/verification engine, policy gates, a hash-chained audit ledger, semantic fault injection, incremental-DAG benchmarks, and a pinned real-corpus runner for dbt Labs’ Jaffle Shop.
+
+## Reproduce
 
 ```bash
 python -m pip install -e .
+python -m pip install pytest
 python -m pytest -q
-certiflow benchmark --nodes 1000
 python -m certiflow.bench.evaluate --trials 100
 python -m certiflow.bench.coverage --nodes 1000
 python -m certiflow.bench.suite --repeats 7
-python -m certiflow.bench.branched --branches 20 --depth 100
+python -m certiflow.bench.branched --branches 50 --depth 100 --repeats 7
+python -m certiflow.bench.jaffle
 ```
 
-## Research status
+The Jaffle runner pins both the upstream commit and all 13 model-file Git blob hashes before normalization.
 
-This is an active research prototype, not a production database correctness system. The trusted checker is deliberately small, while certificate producers may be arbitrarily complex. The current implementation makes the core semantics, incremental invalidation, adapter boundary, fault-injection methodology, and evaluation harness executable without claiming completeness for arbitrary SQL.
+See [`ARTIFACT.md`](ARTIFACT.md) for the evaluation protocol and [`results/reference_results.json`](results/reference_results.json) for the reported reference measurements.
+
+## Repository layout
+
+- `src/certiflow/` — implementation
+- `src/certiflow/adapters/` — dbt, SQL, catalog, and SQLite integration
+- `src/certiflow/policy/` — deployment gates and audit ledger
+- `src/certiflow/bench/` — fault injection, graph benchmarks, and real-corpus evaluation
+- `tests/` — unit and integration tests
+- `paper/` — PVLDB manuscript source
+- `results/` — reference result snapshot
 
 ## Author
 

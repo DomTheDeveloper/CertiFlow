@@ -1,0 +1,25 @@
+\section{Discussion}
+
+\subsection{Relationship to provenance and formal SQL reasoning}
+
+Provenance semirings and related models characterize derivation at a more general algebraic level~\cite{green2007provenance}; transparent provenance systems capture execution context needed for reproducibility~\cite{rupprecht2020provenance}. CertiFlow uses provenance-like dependency edges operationally to determine which accepted semantic facts become stale. It is not intended to replace provenance systems.
+
+HoTTSQL and axiomatic SQL reasoning provide substantially stronger semantic foundations for supported query fragments~\cite{chu2017hottsql,chu2017axiomatic}. CertiFlow instead defines a small common acceptance interface under which such a prover could act as an evidence producer. Grain-aware verification~\cite{karayannidis2026grain} is particularly close in application domain; CertiFlow generalizes the packaging, trust boundary, and invalidation mechanism across multiple property families.
+
+Data-oriented workflow correctness also requires guarantees spanning individual execution steps~\cite{stonebraker2026workflow}. CertiFlow targets analytical transformation DAGs rather than transactional recovery, but both motivate representing correctness above the level of a single statement.
+
+\subsection{Why three-valued checking matters}
+
+A practical assurance system must distinguish a known violation from missing semantics. Returning \textsf{reject} for every unsupported transformation would make the system unusably conservative; returning \textsf{accept} would be unsound. \textsf{Unknown} allows a pipeline to retain verified facts where evidence exists while exposing precisely where stronger normalizers or producers are required.
+
+The Jaffle corpus illustrates this point. The relation-generating macro is not silently flattened or approximated. Its output remains in the graph behind an opaque boundary, and downstream properties that require its internal semantics cannot be derived without additional evidence.
+
+\subsection{Implications for generated pipelines}
+
+ELT-Bench demonstrates that constructing correct multi-stage pipelines is difficult even for strong code agents~\cite{jin2025eltbench}. CertiFlow does not assume that generated code is trustworthy. An AI system may propose a transformation and separately propose a certificate, but neither receives authority to accept the claim. The checker consumes only normalized structure, trusted assumptions, and a rule-specific witness. This separation is particularly useful when the producer is probabilistic.
+
+\subsection{Deployment semantics}
+
+CertiFlow separates verification from policy. A verifier may accept a narrow fact while a deployment still remains blocked because another required fact is absent. This separation permits different environments to impose different assurance levels without changing rule semantics. For example, a development deployment may permit an opaque model whose outputs are not consumed by a governed dataset, whereas a production gate can require schema and restricted-flow facts for every published relation.
+
+The audit ledger provides tamper-evident chaining within a recorded log, but it is not a secure transparency service by itself. A hostile administrator who can replace both the ledger and its root of trust remains outside the current model. External signing or append-only storage can be layered on the same event hashes when stronger nonrepudiation is required.

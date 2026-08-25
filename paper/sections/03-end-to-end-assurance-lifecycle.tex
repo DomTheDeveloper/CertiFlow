@@ -1,0 +1,30 @@
+\section{End-to-End Assurance Lifecycle}\label{sec:lifecycle}
+
+Figure~\ref{fig:architecture} separates the pipeline lifecycle into five stages. The separation is not merely organizational: each stage has a different trust obligation.
+
+\paragraph{1. Normalize the pipeline state.}
+An adapter converts source artifacts into canonical IR nodes. A node records the operator, normalized arguments, named inputs, engine, and source reference. The canonical hash is therefore a function of the transformation state against which a claim was checked. Engine-specific metadata that cannot be interpreted safely is retained as source context or represented by an opaque node rather than discarded.
+
+\paragraph{2. Seed external evidence.}
+Catalog constraints and other administrator-controlled metadata become initial facts. In the live SQLite path, for example, primary-key and unique-index metadata are converted into \texttt{Key} facts. The trust attached to such facts is explicit: CertiFlow's checker can be smaller only if the adapter and the provenance of seed facts are part of the reviewed boundary. A deployment that does not trust a catalog source can instead require a stronger producer or runtime witness.
+
+\paragraph{3. Propose, but do not trust, certificates.}
+A producer observes an IR node and the current fact store and emits candidate certificates. The built-in producer is intentionally simple; a future producer could invoke SMT, a proof assistant, a database optimizer, or an LLM. Producer complexity does not enlarge the checker TCB. This distinction is useful for generated data pipelines, where the same probabilistic system that synthesized a transformation should not be allowed to certify its correctness by assertion.
+
+\paragraph{4. Check and compose.}
+For each certificate, the checker first validates subject binding and assumption availability, then dispatches a rule-specific obligation. Accepted claims are content-addressed and inserted with explicit dependency identifiers. They can immediately become assumptions for certificates farther downstream. Rejected certificates cannot create facts. Missing evidence yields \textsf{unknown} and therefore cannot satisfy a deployment requirement.
+
+\paragraph{5. Invalidate and gate.}
+When pipeline state changes, node hashes identify the changed transformation region and fact dependencies identify the derived evidence that relied upon it. The policy gate evaluates only currently accepted facts. Thus a stale certificate cannot remain effective merely because it was valid for a previous pipeline revision. A hash-chained audit record can retain the sequence of decisions made by the checker.
+
+\subsection{Worked example}
+
+Consider a left join from \texttt{orders} to \texttt{customers} on \texttt{customer\_id}. A live catalog adapter establishes the seed fact
+\[
+  f_0=\mathsf{Key}(\texttt{customers},\{\texttt{customer\_id}\}).
+\]
+The producer proposes a \texttt{join\_fanout} certificate whose witness identifies the normalized equality predicate and the right-hand relation. The checker verifies that the predicate in the witness exactly matches the IR and that $f_0$ is present. It can then emit
+\[
+  f_1=\mathsf{Fanout}(J,\texttt{left\_to\_output},1),\quad D(f_1)=\{f_0\}.
+\]
+If the join is later edited to use a different right-hand attribute, content binding invalidates the old certificate. Even if a producer re-binds the certificate to the new hash, the semantic rule cannot recover the required right-side key and returns \textsf{unknown} or \textsf{reject}, depending on whether the witness conflicts with the IR or evidence is missing. If the customer key itself is revoked, dependency invalidation removes $f_1$ without requiring an unrelated branch of the DAG to be reconsidered.

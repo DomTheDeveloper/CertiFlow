@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Dict, Iterable
 from .model import Certificate, IRNode
 from .graph import PipelineGraph
 
@@ -20,7 +20,12 @@ class CertificateCache:
     def invalidate_graph_change(self, old: PipelineGraph, new: PipelineGraph) -> set[str]:
         changed = old.diff(new)
         affected = old.descendants(changed) | new.descendants(changed)
-        invalid_hashes = {graph.nodes[name].hash for graph in (old, new) for name in affected if name in graph.nodes}
+        invalid_hashes = {
+            graph.nodes[name].hash
+            for graph in (old, new)
+            for name in affected
+            if name in graph.nodes
+        }
         for h in invalid_hashes:
             self.by_node_hash.pop(h, None)
         return affected

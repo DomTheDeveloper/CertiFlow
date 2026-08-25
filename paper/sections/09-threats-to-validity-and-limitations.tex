@@ -1,0 +1,11 @@
+\section{Threats to Validity and Limitations}
+
+The current mutation corpus is controlled and aligned with the implemented rules. The 500/500 rejection result should therefore be interpreted as regression evidence for rule semantics, not as an estimate of production defect recall. Naturally occurring faults may be equivalent under SQL semantics, depend on null behavior, or fall outside the current IR.
+
+The Jaffle experiment measures structural normalization of a small but realistic public dbt project. It does not establish complete semantic coverage. A broader evaluation should include multiple independently developed repositories, manually specified target invariants, and comparison with dbt tests/contracts and specialized analyses on their overlapping scopes.
+
+The SQL normalizer is deliberately restricted. Null semantics, collations, casts, window functions, nondeterministic functions, arbitrary UDFs, dialect-specific expressions, and complex set operations require explicit semantics before strong certificates are valid. Opaque boundaries preserve structure but can interrupt proof propagation.
+
+The Python checker is a research reference implementation rather than a hardened security boundary. The correctness propositions are relative to the rule and normalization implementations; they are not machine-checked proofs of the Python code. A smaller independently implemented checker, potentially in Rust or a proof assistant, is a natural next step.
+
+Finally, absolute performance measurements come from a containerized environment and synthetic graphs. The selective-invalidation result is structurally meaningful, but production latency and storage overhead must be measured on larger warehouse DAGs and real CI workflows.

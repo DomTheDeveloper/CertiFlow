@@ -1,0 +1,54 @@
+\section{Problem and Design Goals}
+
+\subsection{Pipeline model}
+
+Let a pipeline be a directed acyclic graph $G=(V,E)$. Each node $v\in V$ represents a normalized transformation $\tau_v$, and edges encode data dependencies. CertiFlow does not require every source language to share a complete denotational semantics. Instead, each adapter maps the subset it understands to a common IR and marks unsupported semantics explicitly.
+
+\begin{definition}[Fact]
+A fact is a tuple $f=(k,s,p,D,\sigma)$ consisting of a property kind $k$, subject $s$, structured payload $p$, dependency set $D$, and strength annotation $\sigma$. Examples include \texttt{Key(customers, customer\_id)}, \texttt{Grain(revenue, region)}, and \texttt{Fanout(join, left, 1)}.
+\end{definition}
+
+\begin{definition}[Certificate]
+A certificate is $C=(h,r,A,Q,W)$, where $h$ is the cryptographic hash of the canonical subject transformation, $r$ identifies a checker rule, $A$ is a set of fact identifiers used as assumptions, $Q$ is the proposed claim set, and $W$ is a rule-specific witness.
+\end{definition}
+
+The checker computes
+\[
+  K(\tau,C,\Gamma)\in\{\mathsf{accept},\mathsf{reject},\mathsf{unknown}\},
+\]
+where $\Gamma$ is the trusted fact store. \textsf{Reject} denotes evidence that is malformed or contradicts the checked obligation. \textsf{Unknown} means that the checker lacks sufficient evidence or semantics. The distinction is important: uncertainty is not converted into a guarantee.
+
+\subsection{Threat model and trust boundary}
+
+CertiFlow assumes certificate producers may be buggy, stale, or adversarial. A producer can recompute a subject hash, so hash binding alone is insufficient. The checker must independently validate the witness. The normalizer, canonicalization contract, checker rules, trusted seed facts, and dependency bookkeeping form the trusted computing base (TCB). Producers, generated text, AI systems, and optional external solvers remain outside it.
+
+The system does not claim soundness for arbitrary SQL. A source-language construct that cannot be normalized with documented semantics becomes an opaque boundary or produces \textsf{unknown}. This is a deliberate design choice: the TCB should not silently expand into a second general-purpose database engine.
+
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=9mm and 11mm,
+  box/.style={draw,rounded corners,align=center,minimum height=8mm,minimum width=24mm,font=\small},
+  trusted/.style={box,very thick},
+  arr/.style={-{Latex[length=2mm]},thick}
+]
+\node[box] (sources) {dbt / SQL / catalog\\pipeline metadata};
+\node[trusted,right=of sources] (norm) {Normalizer\\canonical IR};
+\node[box,right=of norm] (prod) {Untrusted\\certificate producers};
+\node[trusted,right=of prod] (check) {Deterministic\\checker};
+\node[trusted,right=of check] (facts) {Trusted fact store\\+ dependency graph};
+\node[trusted,below=of facts] (gate) {Policy gate\\audit ledger};
+\draw[arr] (sources) -- (norm);
+\draw[arr] (norm) -- (prod);
+\draw[arr] (norm) to[bend left=18] (check);
+\draw[arr] (prod) -- (check);
+\draw[arr] (facts) to[bend left=20] node[above,font=\scriptsize]{assumptions} (prod);
+\draw[arr] (facts) to[bend right=18] (check);
+\draw[arr] (check) -- (facts);
+\draw[arr] (facts) -- (gate);
+\node[draw,dashed,fit=(norm)(check)(facts)(gate),inner sep=3mm,label={[font=\scriptsize]below:trusted checking boundary}] {};
+\end{tikzpicture}
+\caption{CertiFlow architecture. Complex producers remain untrusted; accepted facts can enter the trusted store only through deterministic checker rules.}
+\Description{A pipeline metadata source is normalized into canonical IR. An untrusted certificate producer proposes certificates. A deterministic checker validates certificates using the normalized IR and trusted facts. Accepted facts are stored with dependencies and can feed a policy gate and audit ledger.}
+\label{fig:architecture}
+\end{figure*}

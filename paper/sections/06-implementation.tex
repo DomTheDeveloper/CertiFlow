@@ -1,0 +1,19 @@
+\section{Implementation}
+
+The artifact is a dependency-free Python research system. The evaluated revision contains 33 Python source modules and 15 test modules, totaling 2,411 source-and-test lines. The core implementation is divided into canonical hashing, typed models, checker rules, fact storage, DAG and cache logic, adapters, normalization, policy enforcement, and evaluation tooling.
+
+\subsection{Adapters and normalization}
+
+The dbt manifest adapter consumes model dependencies and declared columns. A generic catalog adapter converts engine-neutral catalog rows into scan nodes and trusted seed facts. The live SQLite adapter uses \texttt{sqlite\_master} and \texttt{PRAGMA} metadata to extract schemas, primary keys, and unique indexes without executing user queries.
+
+The SQL normalizer recognizes a documented SELECT fragment covering scans, projections, filters, equi-joins, and grouping. Unsupported relational constructs are rejected rather than guessed. The dbt-aware normalizer preprocesses \texttt{ref()} and \texttt{source()}, decomposes common-table expressions, and preserves unsupported Jinja expressions as opaque computed columns. A macro that generates an entire relation becomes an explicit \texttt{Opaque} IR node. Downstream graph structure is preserved, but no unsupported semantic fact is asserted across the boundary.
+
+\subsection{Verification engine, policy gate, and audit}
+
+The end-to-end engine traverses nodes in topological order. Adapters seed trusted metadata facts. An untrusted inference producer proposes certificates for supported operators. The checker evaluates each proposal and immediately inserts accepted facts, allowing them to serve as assumptions for later nodes.
+
+Deployment requirements can be expressed as predicates over accepted facts. The policy gate therefore consumes the trusted store rather than producer assertions. Verification decisions can also be written to a hash-chained JSONL audit ledger. Each event records the node hash, rule, certificate identifier, verdict, reason, and hash of the previous event. The ledger is not a substitute for external signing, but it makes accidental or post-hoc modification detectable within the recorded chain.
+
+\subsection{Reproducibility surface}
+
+The core has no runtime third-party Python dependencies. The repository exposes unit and integration tests, CLI commands, deterministic mutation workloads, synthetic graph generators, and a pinned real-corpus runner. GitHub Actions executes the test suite on Python 3.9 and 3.12, runs representative benchmarks, verifies the pinned dbt corpus, and compiles the manuscript using the official PVLDB Volume 20 template.

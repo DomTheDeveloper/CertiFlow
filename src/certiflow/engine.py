@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import Iterable
 from .checker import Checker
 from .graph import PipelineGraph
@@ -21,11 +21,19 @@ class VerificationReport:
         return 0.0 if self.certificates == 0 else self.accepted / self.certificates
 
     def summary(self) -> dict:
-        return {"nodes": self.nodes, "certificates": self.certificates, "accepted": self.accepted, "rejected": self.rejected, "unknown": self.unknown, "acceptance_rate": self.acceptance_rate}
+        return {
+            "nodes": self.nodes,
+            "certificates": self.certificates,
+            "accepted": self.accepted,
+            "rejected": self.rejected,
+            "unknown": self.unknown,
+            "acceptance_rate": self.acceptance_rate,
+        }
 
 
 class VerificationEngine:
-    def __init__(self, checker: Checker | None = None, producer: InferenceProducer | None = None) -> None:
+    def __init__(self, checker: Checker | None = None,
+                 producer: InferenceProducer | None = None) -> None:
         self.checker = checker or Checker()
         self.producer = producer or InferenceProducer()
 

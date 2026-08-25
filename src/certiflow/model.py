@@ -20,11 +20,19 @@ class Fact:
     strength: str = "invariant"
 
     @staticmethod
-    def make(kind: str, subject: str, payload: Mapping[str, Any], deps: Iterable[str] = (), strength: str = "invariant") -> "Fact":
-        return Fact(kind, subject, tuple(sorted(payload.items())), tuple(sorted(set(deps))), strength)
+    def make(kind: str, subject: str, payload: Mapping[str, Any],
+             deps: Iterable[str] = (), strength: str = "invariant") -> "Fact":
+        return Fact(kind, subject, tuple(sorted(payload.items())),
+                    tuple(sorted(set(deps))), strength)
 
     def as_dict(self) -> Dict[str, Any]:
-        return {"kind": self.kind, "subject": self.subject, "payload": dict(self.payload), "deps": list(self.deps), "strength": self.strength}
+        return {
+            "kind": self.kind,
+            "subject": self.subject,
+            "payload": dict(self.payload),
+            "deps": list(self.deps),
+            "strength": self.strength,
+        }
 
     @property
     def id(self) -> str:
@@ -41,7 +49,14 @@ class IRNode:
     source_ref: str = ""
 
     def canonical(self) -> Dict[str, Any]:
-        return {"op": self.op, "name": self.name, "args": self.args, "inputs": list(self.inputs), "engine": self.engine, "source_ref": self.source_ref}
+        return {
+            "op": self.op,
+            "name": self.name,
+            "args": self.args,
+            "inputs": list(self.inputs),
+            "engine": self.engine,
+            "source_ref": self.source_ref,
+        }
 
     @property
     def hash(self) -> str:
@@ -60,7 +75,15 @@ class Certificate:
 
     @property
     def id(self) -> str:
-        return canonical_hash({"subject_hash": self.subject_hash, "rule": self.rule, "assumptions": self.assumptions, "claims": [c.as_dict() for c in self.claims], "witness": self.witness, "producer": self.producer, "version": self.version})
+        return canonical_hash({
+            "subject_hash": self.subject_hash,
+            "rule": self.rule,
+            "assumptions": self.assumptions,
+            "claims": [c.as_dict() for c in self.claims],
+            "witness": self.witness,
+            "producer": self.producer,
+            "version": self.version,
+        })
 
 
 @dataclass
