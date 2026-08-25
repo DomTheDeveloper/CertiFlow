@@ -1,45 +1,40 @@
 # CertiFlow
 
-CertiFlow is a research prototype for proof-carrying data pipelines. It treats data-transformation guarantees as versioned, machine-checkable artifacts that can be independently validated and composed across heterogeneous pipeline stages.
+CertiFlow is a research system for proof-carrying data pipelines. It attaches versioned, machine-checkable evidence to data transformations and checks that evidence independently before a guarantee is admitted into a pipeline's trusted fact set.
 
-The current PVLDB 2027 Vision-paper prototype focuses on:
+The current system targets a PVLDB 2027 Regular Research Paper.
 
-- content-addressed binding between a certificate and the exact normalized transformation it describes;
-- typed facts for properties such as keys, bounded join fanout, aggregation grain, and restricted data flow;
-- an independent deterministic checker with `ACCEPT`, `REJECT`, and `UNKNOWN` outcomes;
-- explicit dependencies between accepted facts so stale guarantees can be invalidated after schema or transformation changes;
-- a small executable reference implementation intended to make the proposed trust boundary concrete and reproducible.
+## Design
 
-## Repository structure
+CertiFlow has four layers: an engine-neutral transformation IR; untrusted certificate producers; a small deterministic checker; and dependency-aware certificate caching and invalidation. The rule set currently covers key preservation, bounded join fanout, aggregation grain, schema compatibility, restricted-field flow, filter key preservation, and union schema compatibility. Unsupported semantics return `UNKNOWN`.
 
-- `src/certiflow.py` — reference IR, fact model, certificates, fact store, checker, and rule implementations.
-- `tests/test_certiflow.py` — executable regression harness.
-- `ARTIFACT.md` — reproducibility scope, environment, and expected outputs.
-- `CITATION.cff` — citation metadata for the artifact.
+## Repository layout
+
+- `src/certiflow/` - implementation
+- `src/certiflow/adapters/` - dbt and catalog normalization
+- `src/certiflow/bench/` - synthetic workloads and fault injection
+- `tests/` - unit, integration, CLI, adapter, and regression tests
+- `paper/` - PVLDB manuscript
+- `docs/architecture.md` - trust boundary and data flow
+- `ARTIFACT.md` - reproducibility instructions
 
 ## Quick start
 
-Requires Python 3.9+ and no third-party packages.
-
 ```bash
-python tests/test_certiflow.py
+python -m pip install -e .
+python -m pytest -q
+certiflow benchmark --nodes 1000
+python -m certiflow.bench.evaluate --trials 100
+python -m certiflow.bench.coverage --nodes 1000
+python -m certiflow.bench.suite --repeats 7
 ```
-
-Expected output:
-
-```text
-CertiFlow reference prototype: 4/4 core checks passed
-```
-
-The same harness is executed in GitHub Actions on Python 3.9 and 3.12.
 
 ## Research status
 
-The reference implementation is intentionally small. It is not presented as a complete production system and the current Vision paper does not report system-scale performance results from it. The next implementation stage targets dbt, PostgreSQL, DuckDB, and restricted dataframe adapters; a small Rust checker; content-addressed invalidation; and a larger fault-injection study on transformation DAGs.
+This is an active research prototype, not a production database correctness system. The trusted checker is deliberately small, while certificate producers may be arbitrarily complex. The current implementation makes the core semantics, incremental invalidation, adapter boundary, and evaluation harness executable without claiming completeness for arbitrary SQL.
 
 ## Author
 
 Dominic Dabish  
 Department of Computer Science  
-San Diego State University  
-San Diego, California, USA
+San Diego State University
