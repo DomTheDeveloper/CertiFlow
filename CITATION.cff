@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+title: "CertiFlow: Proof-Carrying Data Pipelines for Composable Transformation Assurance"
+message: "If you use this research prototype, please cite the accompanying CertiFlow manuscript."
+type: software
+authors:
+  - family-names: Dabish
+    given-names: Dominic
+affiliation: "Department of Computer Science, San Diego State University"
+repository-code: "https://github.com/DomTheDeveloper/CertiFlow"
+license: MIT
+version: 0.1.0
+date-released: 2026-08-25
+keywords:
+  - data pipelines
+  - provenance
+  - data quality
+  - formal assurance
+  - databases
